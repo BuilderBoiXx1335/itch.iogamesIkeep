@@ -48,3 +48,4 @@ Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy Bypass", "-F
 # Open game in browser
 Start-Sleep -Seconds 2
 Start-Process "http://localhost:$port/index.html"
+

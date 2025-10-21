@@ -1,0 +1,50 @@
+$serverScript = "D:\Start-LocalServer.ps1"
+$gamePath = "D:\dwdoBETA\хех)\www"
+$port = 8080
+
+# Check game folder
+if (-not (Test-Path $gamePath)) {
+    Write-Host "❌ Game folder not found at $gamePath"
+    pause
+    exit
+}
+
+# Latest server code (clean and fixed)
+@'
+$Port = 8080
+$Root = "D:\dwdoBETA\хех)\www"
+
+Add-Type -AssemblyName System.Web
+$listener = [System.Net.HttpListener]::new()
+$listener.Prefixes.Add("http://localhost:$Port/")
+$listener.Start()
+Write-Host "✅ Serving '$Root' at http://localhost:$Port"
+
+while ($listener.IsListening) {
+    $context = $listener.GetContext()
+    $request = $context.Request
+    $response = $context.Response
+
+    $localPath = $request.Url.LocalPath.TrimStart('/').Replace('/', '\')
+    $path = Join-Path $Root $localPath
+
+    if ((Test-Path $path) -and (-not (Get-Item $path).PSIsContainer)) {
+        $bytes = [System.IO.File]::ReadAllBytes($path)
+        $response.ContentType = [System.Web.MimeMapping]::GetMimeMapping($path)
+        $response.OutputStream.Write($bytes, 0, $bytes.Length)
+    } else {
+        $response.StatusCode = 404
+        $errorBytes = [System.Text.Encoding]::UTF8.GetBytes("404 - File Not Found")
+        $response.OutputStream.Write($errorBytes, 0, $errorBytes.Length)
+    }
+
+    $response.Close()
+}
+'@ | Set-Content $serverScript -Encoding UTF8
+
+# Launch server with ExecutionPolicy Bypass
+Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy Bypass", "-File `"$serverScript`""
+
+# Open game in browser
+Start-Sleep -Seconds 2
+Start-Process "http://localhost:$port/index.html"
